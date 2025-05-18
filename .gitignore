@@ -1,0 +1,4 @@
+test/*
+env/*
+model/*
+!model/.gitkeep

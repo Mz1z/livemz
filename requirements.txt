@@ -1,0 +1,4 @@
+numpy==2.2.6
+pillow==11.2.1
+PyOpenGL==3.1.9
+PyOpenGL-accelerate==3.1.9

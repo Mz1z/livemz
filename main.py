@@ -1,0 +1,416 @@
+from OpenGL.GLUT import *
+from OpenGL.GL import *
+from OpenGL.GLU import *
+import sys
+from PIL import Image  # 需要安装PIL库来加载图片
+
+import time
+
+from ctypes import windll
+import ctypes.wintypes
+
+# 全局变量保存鼠标位置
+last_x = 0
+last_y = 0
+rotate_x = 0.0
+rotate_y = 0.0
+is_dragging = False
+head_front_texture_id = None
+offset_x = 0
+offset_y = 0
+
+
+ENABLE_LIGHT = True
+ENABLE_LIGHT = False
+LIGHT_POSITION = [-1.0, 1.0, 2.0, 0.0]
+
+
+# 摄像机距离z轴
+g_camera_dis = 5
+
+
+
+# 用于方便的进行加载贴图
+# pos : (left, top, right, down)
+# img Image.open后的原始png图像
+# return id
+g_texture_num = 0
+def _load_mc_texture(pos, img):
+    global g_texture_num
+    g_texture_num += 1
+
+    _img = img.crop(pos).transpose(Image.Transpose.FLIP_LEFT_RIGHT)  # 裁剪,png需要反转
+    img_data = _img.convert("RGBA").tobytes()
+
+    width, height = _img.size
+
+    ret_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, ret_id)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)  # 按像素显示
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+    return ret_id
+
+
+def load_texture(filename):
+    global head_front_texture_id, \
+        hair_up_texture_id, hair_front_texture_id, hair_left_texture_id, \
+        hair_right_texture_id, hair_back_texture_id
+
+    img = Image.open(filename)
+    head_front_texture_id = _load_mc_texture((8, 8, 16, 16), img)
+    hair_up_texture_id = _load_mc_texture((40, 0, 48, 8), img)
+    hair_front_texture_id = _load_mc_texture((40, 8, 48, 16), img)
+    hair_left_texture_id = _load_mc_texture((32, 8, 40, 16), img)
+    hair_right_texture_id =  _load_mc_texture((48, 8, 56, 16), img)
+    hair_back_texture_id = _load_mc_texture((56, 8, 64, 16), img)
+
+def draw_cube():
+    glColor4f(1.0, 1.0, 1.0, 1.0)  # 默认白色纹理
+    if ENABLE_LIGHT:
+        mat_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    # 前面 - 使用纹理
+    
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_front_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0)
+    glVertex3f(1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 0.0)
+    glVertex3f(-1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 1.0)
+    glVertex3f(-1.0, -1.0, 1.0)
+    glTexCoord2f(0.0, 1.0)
+    glVertex3f(1.0, -1.0, 1.0)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 头发up
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, hair_up_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0)
+    glVertex3f(1.1, 1.1, 1.1)
+    glTexCoord2f(1.0, 0.0)
+    glVertex3f(-1.1, 1.1, 1.1)
+    glTexCoord2f(1.0, 1.0)
+    glVertex3f(-1.1, 1.1, -1.1)
+    glTexCoord2f(0.0, 1.0)
+    glVertex3f(1.1, 1.1, -1.1)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+
+    # 头发front
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, hair_front_texture_id)
+   
+    glEnable(GL_ALPHA_TEST)
+    glAlphaFunc(GL_GREATER, 0.5)
+    
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0)
+    glVertex3f(1.1, 1.1, 1.1)
+    glTexCoord2f(1.0, 0.0)
+    glVertex3f(-1.1, 1.1, 1.1)
+    glTexCoord2f(1.0, 1.0)
+    glVertex3f(-1.1, -1.1, 1.1)
+    glTexCoord2f(0.0, 1.0)
+    glVertex3f(1.1, -1.1, 1.1)
+
+    glEnd()
+    glDisable(GL_ALPHA_TEST)
+    glDisable(GL_TEXTURE_2D)
+
+    # 头发left
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, hair_left_texture_id)
+   
+    glEnable(GL_ALPHA_TEST)
+    glAlphaFunc(GL_GREATER, 0.5)
+    
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0)
+    glVertex3f(-1.1, 1.1, 1.1)
+    glTexCoord2f(1.0, 0.0)
+    glVertex3f(-1.1, 1.1, -1.1)
+    glTexCoord2f(1.0, 1.0)
+    glVertex3f(-1.1, -1.1, -1.1)
+    glTexCoord2f(0.0, 1.0)
+    glVertex3f(-1.1, -1.1, 1.1)
+
+    glEnd()
+    glDisable(GL_ALPHA_TEST)
+    glDisable(GL_TEXTURE_2D)
+
+    # 头发right
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, hair_right_texture_id)
+   
+    glEnable(GL_ALPHA_TEST)
+    glAlphaFunc(GL_GREATER, 0.5)
+    
+    glBegin(GL_QUADS)
+    glNormal3f(1.1, 0.0, 0.0)  # 法线
+    # glTexCoord2f(0.0, 0.0)
+    # glVertex3f(1.1, 1.1, 1.1)
+    # glTexCoord2f(1.0, 0.0)
+    # glVertex3f(1.1, 1.1, -1.1)
+    # glTexCoord2f(1.0, 1.0)
+    # glVertex3f(1.1, -1.1, -1.1)
+    # glTexCoord2f(0.0, 1.0)
+    # glVertex3f(1.1, -1.1, 1.1)
+
+    glTexCoord2f(1-0.0, 0.0)
+    glVertex3f(1.1, 1.1, 1.1)
+    glTexCoord2f(1-1.0, 0.0)
+    glVertex3f(1.1, 1.1, -1.1)
+    glTexCoord2f(1-1.0, 1.0)
+    glVertex3f(1.1, -1.1, -1.1)
+    glTexCoord2f(1-0.0, 1.0)
+    glVertex3f(1.1, -1.1, 1.1)
+
+    glEnd()
+    glDisable(GL_ALPHA_TEST)
+    glDisable(GL_TEXTURE_2D)
+
+    # 头发back
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, hair_back_texture_id)
+   
+    glEnable(GL_ALPHA_TEST)
+    glAlphaFunc(GL_GREATER, 0.5)
+    
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(1-0.0, 0.0)
+    glVertex3f(1.1, 1.1, -1.1)
+    glTexCoord2f(1-1.0, 0.0)
+    glVertex3f(-1.1, 1.1, -1.1)
+    glTexCoord2f(1-1.0, 1.0)
+    glVertex3f(-1.1, -1.1, -1.1)
+    glTexCoord2f(1-0.0, 1.0)
+    glVertex3f(1.1, -1.1, -1.1)
+
+    glEnd()
+    glDisable(GL_ALPHA_TEST)
+    glDisable(GL_TEXTURE_2D)
+
+    
+    
+    glBegin(GL_QUADS)
+    # 后面 - 绿色
+    glColor3f(0.0, 1.0, 0.28)
+    if ENABLE_LIGHT:
+        # 设置材质颜色
+        _rate = 1
+        mat_diffuse = [0.0 * _rate , 1.0 * _rate, 0.28 * _rate, 1.0]
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glVertex3f(1.0, 1.0, -1.0)
+    glVertex3f(-1.0, 1.0, -1.0)
+    glVertex3f(-1.0, -1.0, -1.0)
+    glVertex3f(1.0, -1.0, -1.0)
+
+    
+    # 左面
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glVertex3f(-1.0, 1.0, 1.0)
+    glVertex3f(-1.0, 1.0, -1.0)
+    glVertex3f(-1.0, -1.0, -1.0)
+    glVertex3f(-1.0, -1.0, 1.0)
+    
+    # 右面
+    glNormal3f(1.0, 0.0, 0.0)  # 法线
+    glVertex3f(1.0, 1.0, 1.0)
+    glVertex3f(1.0, 1.0, -1.0)
+    glVertex3f(1.0, -1.0, -1.0)
+    glVertex3f(1.0, -1.0, 1.0)
+    
+    # 上面
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glVertex3f(1.0, 1.0, 1.0)
+    glVertex3f(-1.0, 1.0, 1.0)
+    glVertex3f(-1.0, 1.0, -1.0)
+    glVertex3f(1.0, 1.0, -1.0)
+    
+    # 下面
+    glNormal3f(0.0, -1.0, 0.0)  # 法线
+    glVertex3f(1.0, -1.0, 1.0)
+    glVertex3f(-1.0, -1.0, 1.0)
+    glVertex3f(-1.0, -1.0, -1.0)
+    glVertex3f(1.0, -1.0, -1.0)
+    glEnd()
+
+def init():
+    glEnable(GL_DEPTH_TEST)  # 启用深度测试
+    glClearColor(0.0, 0.0, 0.0, 1.0)  # 设置背景颜色为黑色
+
+    if ENABLE_LIGHT:
+        # 添加光照
+        # 启用光照
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        # 设置光源位置 LIGHT_POSITION全局变量
+        glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION)
+
+        # 设置光源颜色
+        light_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
+
+        # 设置全局材质
+        glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
+        glMaterialf(GL_FRONT, GL_SHININESS, 0.0)
+
+    
+    # 加载纹理
+    # load_texture("1.jpg")
+    load_texture("mz.png")
+
+def draw_light_ball():
+    # 保存当前矩阵状态
+    glPushMatrix()
+    # 移动到光源位置
+    glTranslatef(LIGHT_POSITION[0], LIGHT_POSITION[1], LIGHT_POSITION[2])
+    # 绘制一个小球
+    glutSolidSphere(0.1, 10, 10)  # 半径为 0.1，细分程度为 10x10    
+    # 恢复矩阵状态
+    glPopMatrix()
+
+def display():
+    global offset_x, offset_y   # 用于鼠标跟随
+    global g_camera_dis
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    
+    glLoadIdentity()
+    gluLookAt(0, 0, g_camera_dis, 
+        0, 0, 0, 
+        0, 1, 0)
+    
+    # 应用旋转 + offset鼠标跟随
+    glRotatef(rotate_x+offset_y/18, 1, 0, 0)
+    glRotatef(rotate_y+offset_x/18, 0, 1, 0)
+
+
+    if ENABLE_LIGHT:
+        # 刷新光照
+        # glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION)
+        pass
+    
+    glTranslatef(0.0, 0.0, 0.0)    # 移动物体到原点
+    draw_cube()
+    # draw_light_ball()  # 用于测试光源
+    
+    glutSwapBuffers()
+
+def reshape(width, height):
+    global window_width, window_height
+    window_width = width
+    window_height = height
+    glViewport(0, 0, width, height)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(45.0, width / height, 0.1, 100.0)
+    glMatrixMode(GL_MODELVIEW)
+
+def mouse(button, state, x, y):
+    global is_dragging, last_x, last_y
+    global g_camera_dis
+    if button == GLUT_RIGHT_BUTTON:
+        if state == GLUT_DOWN:
+            is_dragging = True
+            last_x = x
+            last_y = y
+        else:
+            is_dragging = False
+    # 3 == GLUT_WHEEL_UP  4 == GLUT_WHEEL_DOWN
+    _change_rate = 0.2
+    if state == GLUT_UP and button == 3:
+        g_camera_dis -= _change_rate
+    if state == GLUT_UP and button == 4:
+        g_camera_dis += _change_rate
+
+def motion(x, y):
+    global rotate_x, rotate_y, last_x, last_y, is_dragging
+    if is_dragging:
+        dx = x - last_x
+        dy = y - last_y
+        
+        rotate_y += dx * 0.5
+        rotate_x += dy * 0.5
+        
+        last_x = x
+        last_y = y
+        glutPostRedisplay()
+
+def keyboard(key, x, y):
+    if ord(key) == 27:  # ESC键
+        glutLeaveMainLoop()
+
+
+
+# 刷新线程
+def flush_thread(id):
+    global rotate_x, rotate_y, last_x, last_y, is_dragging, window_width, window_height
+
+    global offset_x, offset_y   # 用于鼠标跟随
+
+    window_x = glutGet(GLUT_WINDOW_X)   # 获取窗口坐标
+    window_y = glutGet(GLUT_WINDOW_Y)
+
+    # 获取当前鼠标位置（包括窗口外）
+    # 注意：这仅在Windows上有效，其他平台需要其他方法
+    pt = ctypes.wintypes.POINT()
+    windll.user32.GetCursorPos(ctypes.byref(pt))
+
+    # print(pt.x, pt.y)  # 鼠标在屏幕中的位置
+        
+    # 计算窗口中心在屏幕中的坐标
+    center_x = window_x + window_width // 2
+    center_y = window_y + window_height // 2
+        
+    offset_x = pt.x - center_x
+    offset_y = pt.y - center_y
+
+    # print(offset_x, offset_y)
+
+        
+    glutPostRedisplay()
+    glutTimerFunc(1000//FPS, flush_thread, 1);   # 刷新计时器
+
+
+
+
+# 初始化GLUT
+glutInit(sys.argv)
+glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_ALPHA)
+glutInitWindowSize(500, 500)
+glutInitWindowPosition(100, 100)
+wind = glutCreateWindow(b"livemz")
+
+init()
+glutDisplayFunc(display)
+glutReshapeFunc(reshape)
+glutMouseFunc(mouse)
+glutMotionFunc(motion)
+glutKeyboardFunc(keyboard)
+
+
+
+FPS = 30
+glutTimerFunc(1000//FPS, flush_thread, 1); # glutTimerFunc(毫秒数, 回调函数指针, 区别值);
+
+glutMainLoop()
