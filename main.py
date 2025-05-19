@@ -25,8 +25,10 @@ ENABLE_LIGHT = False
 LIGHT_POSITION = [-1.0, 1.0, 2.0, 0.0]
 
 
-# 摄像机距离z轴
-g_camera_dis = 5
+# 摄像机初始坐标
+g_camera_z = 20
+g_camera_x = 0
+g_camera_y = 0
 
 
 
@@ -57,42 +59,32 @@ def _load_mc_texture(pos, img):
 
 
 def load_texture(filename):
-    global head_front_texture_id, \
+    global head_up_texture_id, head_front_texture_id, head_left_texture_id, \
+        head_right_texture_id, head_back_texture_id, head_down_texture_id, \
         hair_up_texture_id, hair_front_texture_id, hair_left_texture_id, \
         hair_right_texture_id, hair_back_texture_id
 
     img = Image.open(filename)
     head_front_texture_id = _load_mc_texture((8, 8, 16, 16), img)
+    head_up_texture_id = _load_mc_texture((8, 0, 16, 8), img)
+    head_left_texture_id = _load_mc_texture((0, 8, 8, 16), img)
+    head_right_texture_id = _load_mc_texture((16, 8, 24, 16), img)
+    head_down_texture_id = _load_mc_texture((16, 0, 24, 8), img)
+    head_back_texture_id = _load_mc_texture((24, 8, 32, 16), img)
+
     hair_up_texture_id = _load_mc_texture((40, 0, 48, 8), img)
     hair_front_texture_id = _load_mc_texture((40, 8, 48, 16), img)
     hair_left_texture_id = _load_mc_texture((32, 8, 40, 16), img)
     hair_right_texture_id =  _load_mc_texture((48, 8, 56, 16), img)
     hair_back_texture_id = _load_mc_texture((56, 8, 64, 16), img)
 
-def draw_cube():
+
+
+def _draw_hair():
     glColor4f(1.0, 1.0, 1.0, 1.0)  # 默认白色纹理
     if ENABLE_LIGHT:
         mat_diffuse = [1.0, 1.0, 1.0, 1.0]
         glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
-    # 前面 - 使用纹理
-    
-    glEnable(GL_TEXTURE_2D)
-    glBindTexture(GL_TEXTURE_2D, head_front_texture_id)
-    glBegin(GL_QUADS)
-
-    glNormal3f(0.0, 0.0, 1.0)  # 法线
-    glTexCoord2f(0.0, 0.0)
-    glVertex3f(1.0, 1.0, 1.0)
-    glTexCoord2f(1.0, 0.0)
-    glVertex3f(-1.0, 1.0, 1.0)
-    glTexCoord2f(1.0, 1.0)
-    glVertex3f(-1.0, -1.0, 1.0)
-    glTexCoord2f(0.0, 1.0)
-    glVertex3f(1.0, -1.0, 1.0)
-
-    glEnd()
-    glDisable(GL_TEXTURE_2D)
-
     # 头发up
     glEnable(GL_TEXTURE_2D)
     glBindTexture(GL_TEXTURE_2D, hair_up_texture_id)
@@ -164,14 +156,6 @@ def draw_cube():
     
     glBegin(GL_QUADS)
     glNormal3f(1.1, 0.0, 0.0)  # 法线
-    # glTexCoord2f(0.0, 0.0)
-    # glVertex3f(1.1, 1.1, 1.1)
-    # glTexCoord2f(1.0, 0.0)
-    # glVertex3f(1.1, 1.1, -1.1)
-    # glTexCoord2f(1.0, 1.0)
-    # glVertex3f(1.1, -1.1, -1.1)
-    # glTexCoord2f(0.0, 1.0)
-    # glVertex3f(1.1, -1.1, 1.1)
 
     glTexCoord2f(1-0.0, 0.0)
     glVertex3f(1.1, 1.1, 1.1)
@@ -209,51 +193,99 @@ def draw_cube():
     glDisable(GL_ALPHA_TEST)
     glDisable(GL_TEXTURE_2D)
 
-    
-    
-    glBegin(GL_QUADS)
-    # 后面 - 绿色
-    glColor3f(0.0, 1.0, 0.28)
-    if ENABLE_LIGHT:
-        # 设置材质颜色
-        _rate = 1
-        mat_diffuse = [0.0 * _rate , 1.0 * _rate, 0.28 * _rate, 1.0]
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
-    glNormal3f(0.0, 0.0, -1.0)  # 法线
-    glVertex3f(1.0, 1.0, -1.0)
-    glVertex3f(-1.0, 1.0, -1.0)
-    glVertex3f(-1.0, -1.0, -1.0)
-    glVertex3f(1.0, -1.0, -1.0)
 
-    
-    # 左面
-    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+def _draw_head():
+    glColor4f(1.0, 1.0, 1.0, 1.0)  # 默认白色纹理
+    if ENABLE_LIGHT:
+        mat_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    # 前面 - 使用纹理
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_front_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0)
+    glVertex3f(1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 0.0)
     glVertex3f(-1.0, 1.0, 1.0)
-    glVertex3f(-1.0, 1.0, -1.0)
-    glVertex3f(-1.0, -1.0, -1.0)
+    glTexCoord2f(1.0, 1.0)
     glVertex3f(-1.0, -1.0, 1.0)
+    glTexCoord2f(0.0, 1.0)
+    glVertex3f(1.0, -1.0, 1.0)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 后面 - 绿色
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_back_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, 1.0, -1.0)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, 1.0, -1.0)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -1.0, -1.0)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -1.0, -1.0)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+  
+    # 左面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_left_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, 1.0, -1.0)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -1.0, -1.0)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -1.0, 1.0)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
     
     # 右面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_right_texture_id)
+    glBegin(GL_QUADS)
     glNormal3f(1.0, 0.0, 0.0)  # 法线
-    glVertex3f(1.0, 1.0, 1.0)
-    glVertex3f(1.0, 1.0, -1.0)
-    glVertex3f(1.0, -1.0, -1.0)
-    glVertex3f(1.0, -1.0, 1.0)
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, 1.0, -1.0)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -1.0, -1.0)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -1.0, 1.0)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
     
     # 上面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_up_texture_id)
+    glBegin(GL_QUADS)
     glNormal3f(0.0, 1.0, 0.0)  # 法线
-    glVertex3f(1.0, 1.0, 1.0)
-    glVertex3f(-1.0, 1.0, 1.0)
-    glVertex3f(-1.0, 1.0, -1.0)
-    glVertex3f(1.0, 1.0, -1.0)
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, 1.0, 1.0)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, 1.0, -1.0)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, 1.0, -1.0)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
     
     # 下面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, head_down_texture_id)
+    glBegin(GL_QUADS)
     glNormal3f(0.0, -1.0, 0.0)  # 法线
-    glVertex3f(1.0, -1.0, 1.0)
-    glVertex3f(-1.0, -1.0, 1.0)
-    glVertex3f(-1.0, -1.0, -1.0)
-    glVertex3f(1.0, -1.0, -1.0)
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -1.0, 1.0)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -1.0, 1.0)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -1.0, -1.0)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -1.0, -1.0)
     glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+
+
+def draw_cube():
+    _draw_head()    # 绘制头部
+    _draw_hair()    # 绘制头发
+
+
+
 
 def init():
     glEnable(GL_DEPTH_TEST)  # 启用深度测试
@@ -278,7 +310,7 @@ def init():
     
     # 加载纹理
     # load_texture("1.jpg")
-    load_texture("mz.png")
+    load_texture("model/mz.png")
 
 def draw_light_ball():
     # 保存当前矩阵状态
@@ -292,12 +324,12 @@ def draw_light_ball():
 
 def display():
     global offset_x, offset_y   # 用于鼠标跟随
-    global g_camera_dis
+    global g_camera_z, g_camera_x, g_camera_y
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
     glLoadIdentity()
-    gluLookAt(0, 0, g_camera_dis, 
-        0, 0, 0, 
+    gluLookAt(g_camera_x, g_camera_y, g_camera_z, 
+        g_camera_x, g_camera_y, 0, 
         0, 1, 0)
     
     # 应用旋转 + offset鼠标跟随
@@ -328,7 +360,7 @@ def reshape(width, height):
 
 def mouse(button, state, x, y):
     global is_dragging, last_x, last_y
-    global g_camera_dis
+    global g_camera_z
     if button == GLUT_RIGHT_BUTTON:
         if state == GLUT_DOWN:
             is_dragging = True
@@ -337,11 +369,11 @@ def mouse(button, state, x, y):
         else:
             is_dragging = False
     # 3 == GLUT_WHEEL_UP  4 == GLUT_WHEEL_DOWN
-    _change_rate = 0.2
+    _change_rate = 0.3
     if state == GLUT_UP and button == 3:
-        g_camera_dis -= _change_rate
+        g_camera_z -= _change_rate
     if state == GLUT_UP and button == 4:
-        g_camera_dis += _change_rate
+        g_camera_z += _change_rate
 
 def motion(x, y):
     global rotate_x, rotate_y, last_x, last_y, is_dragging
@@ -357,8 +389,20 @@ def motion(x, y):
         glutPostRedisplay()
 
 def keyboard(key, x, y):
+    global g_camera_x, g_camera_y
+    _change_rate = 0.3
+
     if ord(key) == 27:  # ESC键
         glutLeaveMainLoop()
+    elif key == b'W' or key == b'w':
+        g_camera_y += _change_rate
+    elif key == b'A' or key == b'a':
+        g_camera_x -= _change_rate
+    elif key == b'S' or key == b's':
+        g_camera_y -= _change_rate
+    elif key == b'D' or key == b'd':
+        g_camera_x += _change_rate
+
 
 
 
