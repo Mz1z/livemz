@@ -12,10 +12,15 @@ import ctypes.wintypes
 # 全局变量保存鼠标位置
 last_x = 0
 last_y = 0
-rotate_x = 0.0
-rotate_y = 0.0
+
+g_head_rotate_x = 0.0
+g_head_rotate_y = 0.0
+
+g_body_rotate_y = 0.0
+
+
 is_dragging = False
-head_front_texture_id = None
+
 offset_x = 0
 offset_y = 0
 
@@ -62,7 +67,9 @@ def load_texture(filename):
     global head_up_texture_id, head_front_texture_id, head_left_texture_id, \
         head_right_texture_id, head_back_texture_id, head_down_texture_id, \
         hair_up_texture_id, hair_front_texture_id, hair_left_texture_id, \
-        hair_right_texture_id, hair_back_texture_id
+        hair_right_texture_id, hair_back_texture_id, \
+        body_up_texture_id, body_front_texture_id, body_left_texture_id, \
+        body_right_texture_id, body_back_texture_id, body_down_texture_id
 
     img = Image.open(filename)
     head_front_texture_id = _load_mc_texture((8, 8, 16, 16), img)
@@ -77,6 +84,15 @@ def load_texture(filename):
     hair_left_texture_id = _load_mc_texture((32, 8, 40, 16), img)
     hair_right_texture_id =  _load_mc_texture((48, 8, 56, 16), img)
     hair_back_texture_id = _load_mc_texture((56, 8, 64, 16), img)
+
+    body_front_texture_id = _load_mc_texture((20, 20, 28, 32), img)
+    body_up_texture_id = _load_mc_texture((20, 16, 28, 20), img)
+    body_left_texture_id = _load_mc_texture((28, 20, 32, 32), img)
+    body_right_texture_id = _load_mc_texture((28, 20, 32, 32), img)   # 暂时和左边一样
+    body_down_texture_id = _load_mc_texture((28, 16, 36, 20), img)
+    body_back_texture_id = _load_mc_texture((32, 20, 40, 32), img)
+
+
 
 
 
@@ -280,11 +296,85 @@ def _draw_head():
 
 
 
-def draw_cube():
-    _draw_head()    # 绘制头部
-    _draw_hair()    # 绘制头发
+def _draw_body():
+    glColor4f(1.0, 1.0, 1.0, 1.0)  # 默认白色纹理
+    if ENABLE_LIGHT:
+        mat_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    # 前面 - 使用纹理
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, body_front_texture_id)
+    glBegin(GL_QUADS)
 
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -4, 0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -4, 0.5)
 
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 后面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, body_back_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -4, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+  
+    # 左面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, body_left_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -4, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 右面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, body_right_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -4, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 上面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, body_up_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -1.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -1.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 下面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, body_down_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, -1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -4, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -4, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -4, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
 
 
 def init():
@@ -331,19 +421,29 @@ def display():
     gluLookAt(g_camera_x, g_camera_y, g_camera_z, 
         g_camera_x, g_camera_y, 0, 
         0, 1, 0)
-    
-    # 应用旋转 + offset鼠标跟随
-    glRotatef(rotate_x+offset_y/18, 1, 0, 0)
-    glRotatef(rotate_y+offset_x/18, 0, 1, 0)
-
 
     if ENABLE_LIGHT:
         # 刷新光照
         # glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION)
         pass
     
+    # 绘制头部
+        # 应用旋转 + offset鼠标跟随
+    glPushMatrix()
+    glRotatef(g_head_rotate_x+offset_y/18, 1, 0, 0)
+    glRotatef(g_head_rotate_y+offset_x/18, 0, 1, 0)
     glTranslatef(0.0, 0.0, 0.0)    # 移动物体到原点
-    draw_cube()
+    _draw_head()    # 绘制头部
+    _draw_hair()    # 绘制头发
+    glPopMatrix()
+
+    # 绘制身体
+    glPushMatrix()
+    glTranslatef(0.0, 0.0, 0.0)
+    glRotatef(g_body_rotate_y, 0, 1, 0)
+    _draw_body()    
+    glPopMatrix()
+
     # draw_light_ball()  # 用于测试光源
     
     glutSwapBuffers()
@@ -376,13 +476,13 @@ def mouse(button, state, x, y):
         g_camera_z += _change_rate
 
 def motion(x, y):
-    global rotate_x, rotate_y, last_x, last_y, is_dragging
+    global g_head_rotate_x, g_head_rotate_y, last_x, last_y, is_dragging
     if is_dragging:
         dx = x - last_x
         dy = y - last_y
         
-        rotate_y += dx * 0.5
-        rotate_x += dy * 0.5
+        g_head_rotate_y += dx * 0.5
+        g_head_rotate_x += dy * 0.5
         
         last_x = x
         last_y = y
@@ -408,8 +508,8 @@ def keyboard(key, x, y):
 
 # 刷新线程
 def flush_thread(id):
-    global rotate_x, rotate_y, last_x, last_y, is_dragging, window_width, window_height
-
+    global g_head_rotate_x, g_head_rotate_y, last_x, last_y, is_dragging, window_width, window_height
+    global g_body_rotate_y
     global offset_x, offset_y   # 用于鼠标跟随
 
     window_x = glutGet(GLUT_WINDOW_X)   # 获取窗口坐标
@@ -430,6 +530,13 @@ def flush_thread(id):
     offset_y = pt.y - center_y
 
     # print(offset_x, offset_y)
+
+    # 计算身体偏转, 头部旋转带动身体
+    _head_rotate_y = g_head_rotate_y+offset_x/18
+    if _head_rotate_y - g_body_rotate_y > 30:
+        g_body_rotate_y = _head_rotate_y - 30
+    elif g_body_rotate_y - _head_rotate_y > 30:
+        g_body_rotate_y = _head_rotate_y + 30
 
         
     glutPostRedisplay()
