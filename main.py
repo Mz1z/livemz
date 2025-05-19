@@ -69,7 +69,11 @@ def load_texture(filename):
         hair_up_texture_id, hair_front_texture_id, hair_left_texture_id, \
         hair_right_texture_id, hair_back_texture_id, \
         body_up_texture_id, body_front_texture_id, body_left_texture_id, \
-        body_right_texture_id, body_back_texture_id, body_down_texture_id
+        body_right_texture_id, body_back_texture_id, body_down_texture_id, \
+        arm_up_texture_id, arm_front_texture_id, arm_left_texture_id, \
+        arm_right_texture_id, arm_back_texture_id, arm_down_texture_id, \
+        leg_up_texture_id, leg_front_texture_id, leg_left_texture_id, \
+        leg_right_texture_id, leg_back_texture_id, leg_down_texture_id
 
     img = Image.open(filename)
     head_front_texture_id = _load_mc_texture((8, 8, 16, 16), img)
@@ -92,6 +96,19 @@ def load_texture(filename):
     body_down_texture_id = _load_mc_texture((28, 16, 36, 20), img)
     body_back_texture_id = _load_mc_texture((32, 20, 40, 32), img)
 
+    arm_front_texture_id = _load_mc_texture((44, 20, 48, 32), img)
+    arm_up_texture_id = _load_mc_texture((44, 16, 48, 20), img)
+    arm_left_texture_id = _load_mc_texture((40, 20, 44, 32), img)
+    arm_right_texture_id = _load_mc_texture((40, 20, 44, 32), img)   # 暂时和左边一样
+    arm_down_texture_id = _load_mc_texture((48, 16, 52, 20), img)
+    arm_back_texture_id = _load_mc_texture((40, 20, 44, 32), img)   # 暂时和左边一样
+
+    leg_front_texture_id = _load_mc_texture((2, 20, 8, 32), img)
+    leg_up_texture_id = _load_mc_texture((4, 16, 8, 20), img)
+    leg_left_texture_id = _load_mc_texture((0, 20, 4, 32), img)
+    leg_right_texture_id = _load_mc_texture((8, 20, 12, 32), img)
+    leg_down_texture_id = _load_mc_texture((8, 16, 12, 20), img)
+    leg_back_texture_id = _load_mc_texture((12, 20, 16, 32), img) 
 
 
 
@@ -377,6 +394,322 @@ def _draw_body():
     glDisable(GL_TEXTURE_2D)
 
 
+def _draw_arms():
+    # 左arm
+    glColor4f(1.0, 1.0, 1.0, 1.0)  # 默认白色纹理
+    if ENABLE_LIGHT:
+        mat_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    # 前面 - 使用纹理
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_front_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-2.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-2.0, -4, 0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -4, 0.5)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 后面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_back_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-2.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-2.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -4, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+  
+    # 左面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_left_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-2.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-2.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-2.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-2.0, -4, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 右面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_right_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -4, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 上面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_up_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-2.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-2.0, -1.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -1.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 下面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_down_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, -1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -4, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-2.0, -4, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-2.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -4, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 右arm
+    # 前面 - 使用纹理
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_front_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(2.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -4, 0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(2.0, -4, 0.5)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 后面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_back_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(2.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(2.0, -4, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+  
+    # 左面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_left_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(2.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(2.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(2.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(2.0, -4, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 右面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_right_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -1.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -4, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 上面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_up_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(2.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -1.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -1.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(2.0, -1.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 下面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, arm_down_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, -1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(2.0, -4, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -4, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -4, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(2.0, -4, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+def _draw_legs():
+    # 左leg
+    glColor4f(1.0, 1.0, 1.0, 1.0)  # 默认白色纹理
+    if ENABLE_LIGHT:
+        mat_diffuse = [1.0, 1.0, 1.0, 1.0]
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    # 前面 - 使用纹理
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_front_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(0.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -7.0, 0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(0.0, -7.0, 0.5)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 后面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_back_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(0.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(0.0, -7.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+  
+    # 左面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_left_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(-1.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(-1.0, -7.0, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 右面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_right_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(0.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(0.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(0.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(0.0, -7.0, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 上面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_up_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(0.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -4.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(0.0, -4.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 下面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_down_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, -1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(0.0, -7.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(-1.0, -7.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(-1.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(0.0, -7.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 右leg
+    # 前面 - 使用纹理
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_front_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, 1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(0.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(0.0, -7.0, 0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -7.0, 0.5)
+
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+    # 后面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_back_texture_id)
+    glBegin(GL_QUADS)
+
+    glNormal3f(0.0, 0.0, -1.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(0.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(0.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -7.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+  
+    # 左面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_left_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(-1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(1.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(1.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -7.0, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 右面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_right_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(1.0, 0.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(0.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(0.0, -4.0, -0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(0.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(0.0, -7.0, 0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 上面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_up_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, 1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(0.0, -4.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(0.0, -4.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -4.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+    
+    # 下面
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, leg_down_texture_id)
+    glBegin(GL_QUADS)
+    glNormal3f(0.0, -1.0, 0.0)  # 法线
+    glTexCoord2f(0.0, 0.0);glVertex3f(1.0, -7.0, 0.5)
+    glTexCoord2f(1.0, 0.0);glVertex3f(0.0, -7.0, 0.5)
+    glTexCoord2f(1.0, 1.0);glVertex3f(0.0, -7.0, -0.5)
+    glTexCoord2f(0.0, 1.0);glVertex3f(1.0, -7.0, -0.5)
+    glEnd()
+    glDisable(GL_TEXTURE_2D)
+
+
+
 def init():
     glEnable(GL_DEPTH_TEST)  # 启用深度测试
     glClearColor(0.0, 0.0, 0.0, 1.0)  # 设置背景颜色为黑色
@@ -442,7 +775,12 @@ def display():
     glTranslatef(0.0, 0.0, 0.0)
     glRotatef(g_body_rotate_y, 0, 1, 0)
     _draw_body()    
+    _draw_arms()
+    _draw_legs()
     glPopMatrix()
+
+    # 绘制四肢，四肢要跟着身体一起操作
+
 
     # draw_light_ball()  # 用于测试光源
     
