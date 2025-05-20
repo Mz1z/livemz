@@ -136,6 +136,10 @@ def keyboard(key, x, y):
         g_camera_x += _change_rate
     elif key == b' ':
         steve_mz.jump()
+    elif key == b'Q' or key == b'q':
+        steve_mz.add_run_speed(1)
+    elif key == b'E' or key == b'e':
+        steve_mz.add_run_speed(-1)
 
 
 

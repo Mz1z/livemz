@@ -88,10 +88,10 @@ class Limbs(object):
         self._z_rotate_rate = -0.3 
         self.MAX_Z_ROTATE = 7
 
-        self.run_speed = 8
+        self.run_direction = 1
         self.MAX_X_ROTATE = 40
 
-    def update(self, if_run):
+    def update(self, if_run, run_speed=8):
         if self.is_arm:
             # 自然动作z轴晃动
             if self.is_left:    # 左arm
@@ -105,22 +105,35 @@ class Limbs(object):
             # 跑步动作x轴转动
             if if_run:
                 if self.is_left:
-                    self.x_rotate += self.run_speed
+                    self.x_rotate += run_speed * self.run_direction
                 else:
-                    self.x_rotate -= self.run_speed
+                    self.x_rotate -= run_speed * self.run_direction
                 if abs(self.x_rotate) > self.MAX_X_ROTATE:
-                    self.run_speed = -self.run_speed
+                    self.run_direction = -self.run_direction
+            else:
+                # 停止跑步但是肢体没有回位
+                if self.x_rotate > 0:
+                    self.x_rotate -= 1
+                elif self.x_rotate < 0:
+                    self.x_rotate += 1
+
 
         else:
             # 腿部动作
             if if_run:
                 if self.is_left:
                     # 左腿
-                    self.x_rotate -= self.run_speed
+                    self.x_rotate -= run_speed * self.run_direction
                 else:
-                    self.x_rotate += self.run_speed
+                    self.x_rotate += run_speed * self.run_direction
                 if abs(self.x_rotate) > self.MAX_X_ROTATE:
-                    self.run_speed = -self.run_speed
+                    self.run_direction = -self.run_direction
+            else:
+                # 停止跑步但是肢体没有回位
+                if self.x_rotate > 0:
+                    self.x_rotate -= 1
+                elif self.x_rotate < 0:
+                    self.x_rotate += 1
 
 
 
@@ -457,12 +470,8 @@ class Limbs(object):
 
 
 
-
 # 用来统一管理四肢状态，同步更新
 class Steve():
-    if_run = True
-    if_jump = False
-
     def __init__(self, model_path, _ENABLE_LIGHT):
         global ENABLE_LIGHT
         ENABLE_LIGHT = _ENABLE_LIGHT
@@ -482,10 +491,14 @@ class Steve():
         self.head_rotate_x = 0.0
         self.head_rotate_y = 0.0
         # 跳跃控制
+        self.if_jump = False
         self.jump_height = 0.0
         self.jump_timer = 0
         self.jump_timer_MAX = 18
         self.jump_speed = 0.2
+        # 跑步速度控制
+        self.if_run = False
+        self.run_speed = 0
 
     def jump(self):
         if self.if_jump:
@@ -493,6 +506,14 @@ class Steve():
         # 启动跳跃
         self.if_jump = True
         self.jump_timer = self.jump_timer_MAX
+
+    def add_run_speed(self, num):
+        self.run_speed += num
+        if self.run_speed <= 0:
+            self.run_speed = 0
+            self.if_run = False
+        else:
+            self.if_run = True
 
     def motion(self, x, y, last_x, last_y, is_dragging):
         # 处理用户鼠标移动事件
@@ -525,10 +546,10 @@ class Steve():
             self.body_rotate_y = _head_rotate_y - 30
         elif self.body_rotate_y - _head_rotate_y > 30:
             self.body_rotate_y = _head_rotate_y + 30
-        self.left_arm.update(self.if_run)
-        self.right_arm.update(self.if_run)
-        self.left_leg.update(self.if_run)
-        self.right_leg.update(self.if_run)
+        self.left_arm.update(self.if_run, self.run_speed)
+        self.right_arm.update(self.if_run, self.run_speed)
+        self.left_leg.update(self.if_run, self.run_speed)
+        self.right_leg.update(self.if_run, self.run_speed)
 
         if self.if_jump:
             if self.jump_timer <= self.jump_timer_MAX / 2:
