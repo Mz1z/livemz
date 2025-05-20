@@ -515,6 +515,14 @@ class Steve():
         else:
             self.if_run = True
 
+    def set_run_speed(self, num):
+        self.run_speed = num
+        if self.run_speed <= 0:
+            self.run_speed = 0
+            self.if_run = False
+        else:
+            self.if_run = True
+
     def motion(self, x, y, last_x, last_y, is_dragging):
         # 处理用户鼠标移动事件
         if is_dragging:

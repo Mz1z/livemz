@@ -5,8 +5,9 @@ import sys
 from PIL import Image  # 需要安装PIL库来加载图片
 
 import time
+import math
 
-from ctypes import windll
+from ctypes import windll, cast, string_at
 import ctypes.wintypes
 
 
@@ -26,9 +27,9 @@ LIGHT_POSITION = [-1.0, 1.0, 2.0, 0.0]
 
 
 # 摄像机初始坐标
-g_camera_z = 20
+g_camera_z = 15
 g_camera_x = 0
-g_camera_y = 0
+g_camera_y = -2.5
 
 
 def init():
@@ -136,17 +137,48 @@ def keyboard(key, x, y):
         g_camera_x += _change_rate
     elif key == b' ':
         steve_mz.jump()
-    elif key == b'Q' or key == b'q':
-        steve_mz.add_run_speed(1)
-    elif key == b'E' or key == b'e':
-        steve_mz.add_run_speed(-1)
 
 
+    if not g_use_apm:
+        if key == b'Q' or key == b'q':
+            steve_mz.add_run_speed(1)
+        if key == b'E' or key == b'e':
+            steve_mz.add_run_speed(-1)
+
+
+g_use_apm = True
+
+action_times = []
+action_times_max_length = 60*1000 // FPS
+apm = 0
 
 # 刷新线程
 def flush_thread(id):
-    global window_width, window_height
-    
+    if g_use_apm:
+        # win32监听键盘消息并记录相应的apm(笑)
+        global action_times, action_times_max_length
+
+        _count = 0   # 统计这一帧的操作次数
+        for i in range(0x01, 0xff):   # 轮询 0x8000表示按下 0x8001表示新按下
+            tmp = windll.user32.GetAsyncKeyState(i)
+            if tmp & 0x8000 and tmp & 0x0001:    # 获取到一次操作
+                _count += 1
+                if i == 0x20:    # 空格
+                    steve_mz.jump()
+
+
+        if len(action_times) == action_times_max_length:
+            action_times.pop(0)
+            action_times.append(_count)
+        elif len(action_times) < action_times_max_length:
+            action_times.append(_count)
+
+        apm = sum(action_times)
+        steve_mz.set_run_speed(math.ceil(apm/10))
+
+
+
+    global window_width, window_height 
     window_x = glutGet(GLUT_WINDOW_X)   # 获取窗口坐标
     window_y = glutGet(GLUT_WINDOW_Y)
 
