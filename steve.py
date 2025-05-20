@@ -461,6 +461,8 @@ class Limbs(object):
 # 用来统一管理四肢状态，同步更新
 class Steve():
     if_run = True
+    if_jump = False
+
     def __init__(self, model_path, _ENABLE_LIGHT):
         global ENABLE_LIGHT
         ENABLE_LIGHT = _ENABLE_LIGHT
@@ -479,6 +481,18 @@ class Steve():
         # 头部转向
         self.head_rotate_x = 0.0
         self.head_rotate_y = 0.0
+        # 跳跃控制
+        self.jump_height = 0.0
+        self.jump_timer = 0
+        self.jump_timer_MAX = 18
+        self.jump_speed = 0.2
+
+    def jump(self):
+        if self.if_jump:
+            return
+        # 启动跳跃
+        self.if_jump = True
+        self.jump_timer = self.jump_timer_MAX
 
     def motion(self, x, y, last_x, last_y, is_dragging):
         # 处理用户鼠标移动事件
@@ -516,42 +530,56 @@ class Steve():
         self.left_leg.update(self.if_run)
         self.right_leg.update(self.if_run)
 
+        if self.if_jump:
+            if self.jump_timer <= self.jump_timer_MAX / 2:
+                self.jump_height -= self.jump_speed
+            else:
+                self.jump_height += self.jump_speed
+            self.jump_timer -= 1
+            if self.jump_timer == 0:
+                self.jump_height = 0
+                self.if_jump = False
+
+
     def draw(self):
-        # 绘制头部
-        # 应用旋转 + offset鼠标跟随
+        # 跳跃高度
         glPushMatrix()
-        glRotatef(self.head_rotate_x+self.mouse_offset_y/18, 1, 0, 0)
-        glRotatef(self.head_rotate_y+self.mouse_offset_x/18, 0, 1, 0)
-        glTranslatef(0.0, 0.0, 0.0)    # 移动物体到原点
-        _draw_head()    # 绘制头部
-        _draw_hair()    # 绘制头发
-        glPopMatrix()
-
-        # 绘制身体，四肢
         if True:
+            glTranslatef(0.0, self.jump_height, 0.0)
+
+            # 绘制头部
+            # 应用旋转 + offset鼠标跟随
             glPushMatrix()
-            
-            glTranslatef(0.0, 0.0, 0.0)
-            glRotatef(self.body_rotate_y, 0, 1, 0)
-            _draw_body()  
-
-            if True:  # 画手臂
-                glPushMatrix()
-                self.left_arm.draw()
-                glPopMatrix()
-                glPushMatrix()
-                self.right_arm.draw()
-                glPopMatrix()
-
-            if True:  # 画腿
-                glPushMatrix()
-                self.left_leg.draw()
-                glPopMatrix()
-                glPushMatrix()
-                self.right_leg.draw()
-                glPopMatrix()
-
+            glRotatef(self.head_rotate_x+self.mouse_offset_y/18, 1, 0, 0)
+            glRotatef(self.head_rotate_y+self.mouse_offset_x/18, 0, 1, 0)
+            _draw_head()    # 绘制头部
+            _draw_hair()    # 绘制头发
             glPopMatrix()
+
+            # 绘制身体，四肢
+            if True:
+                glPushMatrix()    
+                glRotatef(self.body_rotate_y, 0, 1, 0)
+                _draw_body()  
+
+                if True:  # 画手臂
+                    glPushMatrix()
+                    self.left_arm.draw()
+                    glPopMatrix()
+                    glPushMatrix()
+                    self.right_arm.draw()
+                    glPopMatrix()
+
+                if True:  # 画腿
+                    glPushMatrix()
+                    self.left_leg.draw()
+                    glPopMatrix()
+                    glPushMatrix()
+                    self.right_leg.draw()
+                    glPopMatrix()
+
+                glPopMatrix()
+        glPopMatrix()
 
 
 

@@ -134,7 +134,8 @@ def keyboard(key, x, y):
         g_camera_y -= _change_rate
     elif key == b'D' or key == b'd':
         g_camera_x += _change_rate
-
+    elif key == b' ':
+        steve_mz.jump()
 
 
 
