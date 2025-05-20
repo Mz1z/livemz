@@ -4,10 +4,6 @@ from OpenGL.GLU import *
 from PIL import Image  # 需要安装PIL库来加载图片
 
 
-# 是否奔跑  临时测试使用
-g_run = True
-
-
 # 用于方便的进行加载贴图
 # pos : (left, top, right, down)
 # img Image.open后的原始png图像
@@ -95,7 +91,7 @@ class Limbs(object):
         self.run_speed = 8
         self.MAX_X_ROTATE = 40
 
-    def update(self):
+    def update(self, if_run):
         if self.is_arm:
             # 自然动作z轴晃动
             if self.is_left:    # 左arm
@@ -107,7 +103,7 @@ class Limbs(object):
                 if self.z_rotate > self.MAX_Z_ROTATE or self.z_rotate <= 0:
                     self._z_rotate_rate = -self._z_rotate_rate
             # 跑步动作x轴转动
-            if g_run:
+            if if_run:
                 if self.is_left:
                     self.x_rotate += self.run_speed
                 else:
@@ -117,7 +113,7 @@ class Limbs(object):
 
         else:
             # 腿部动作
-            if g_run:
+            if if_run:
                 if self.is_left:
                     # 左腿
                     self.x_rotate -= self.run_speed
@@ -464,35 +460,34 @@ class Limbs(object):
 
 # 用来统一管理四肢状态，同步更新
 class Steve():
+    if_run = True
     def __init__(self, model_path, _ENABLE_LIGHT):
         global ENABLE_LIGHT
         ENABLE_LIGHT = _ENABLE_LIGHT
         # 加载纹理
         load_texture(model_path)
         # 初始化四肢
-        global g_left_arm, g_right_arm, g_left_leg, g_right_leg
-        g_left_arm = Limbs(is_arm=True, is_left=True)
-        g_right_arm = Limbs(is_arm=True, is_left=False)
-        g_left_leg = Limbs(is_arm=False, is_left=True)
-        g_right_leg = Limbs(is_arm=False, is_left=False)
-        global offset_x, offset_y   # 用于鼠标跟随
-        offset_x = 0
-        offset_y = 0
-        global g_body_rotate_y
-        g_body_rotate_y = 0.0
-        global g_head_rotate_x, g_head_rotate_y
-        g_head_rotate_x = 0.0
-        g_head_rotate_y = 0.0
+        self.left_arm = Limbs(is_arm=True, is_left=True)
+        self.right_arm = Limbs(is_arm=True, is_left=False)
+        self.left_leg = Limbs(is_arm=False, is_left=True)
+        self.right_leg = Limbs(is_arm=False, is_left=False)
+        # 用于鼠标跟随
+        self.mouse_offset_x = 0
+        self.mouse_offset_y = 0
+        # 身体转向
+        self.body_rotate_y = 0.0
+        # 头部转向
+        self.head_rotate_x = 0.0
+        self.head_rotate_y = 0.0
 
     def motion(self, x, y, last_x, last_y, is_dragging):
-        global g_head_rotate_y, g_head_rotate_x
         # 处理用户鼠标移动事件
         if is_dragging:
             dx = x - last_x
             dy = y - last_y
             
-            g_head_rotate_y += dx * 0.5
-            g_head_rotate_x += dy * 0.5
+            self.head_rotate_y += dx * 0.5
+            self.head_rotate_x += dy * 0.5
             
             last_x = x
             last_y = y
@@ -501,35 +496,32 @@ class Steve():
 
     # pt: ctypes.wintypes.POINT() 鼠标在屏幕中的位置
     def update(self, pt, window_x, window_y, window_width, window_height):
-        global g_body_rotate_y, offset_y, offset_x
         # 计算窗口中心在屏幕中的坐标
         center_x = window_x + window_width // 2
         center_y = window_y + window_height // 2
             
-        offset_x = pt.x - center_x
-        offset_y = pt.y - center_y
+        self.mouse_offset_x = pt.x - center_x
+        self.mouse_offset_y = pt.y - center_y
 
-        # print(offset_x, offset_y)
+        # print(self.mouse_offset_x, self.mouse_offset_y)
 
         # 计算身体偏转, 头部旋转带动身体
-        _head_rotate_y = g_head_rotate_y+offset_x/18
-        if _head_rotate_y - g_body_rotate_y > 30:
-            g_body_rotate_y = _head_rotate_y - 30
-        elif g_body_rotate_y - _head_rotate_y > 30:
-            g_body_rotate_y = _head_rotate_y + 30
-        g_left_arm.update()
-        g_right_arm.update()
-        g_left_leg.update()
-        g_right_leg.update()
+        _head_rotate_y = self.head_rotate_y+self.mouse_offset_x/18
+        if _head_rotate_y - self.body_rotate_y > 30:
+            self.body_rotate_y = _head_rotate_y - 30
+        elif self.body_rotate_y - _head_rotate_y > 30:
+            self.body_rotate_y = _head_rotate_y + 30
+        self.left_arm.update(self.if_run)
+        self.right_arm.update(self.if_run)
+        self.left_leg.update(self.if_run)
+        self.right_leg.update(self.if_run)
 
     def draw(self):
-        global g_head_rotate_x, g_head_rotate_y, offset_y, offset_x, g_body_rotate_y
         # 绘制头部
         # 应用旋转 + offset鼠标跟随
         glPushMatrix()
-        print(offset_y, offset_x)
-        glRotatef(g_head_rotate_x+offset_y/18, 1, 0, 0)
-        glRotatef(g_head_rotate_y+offset_x/18, 0, 1, 0)
+        glRotatef(self.head_rotate_x+self.mouse_offset_y/18, 1, 0, 0)
+        glRotatef(self.head_rotate_y+self.mouse_offset_x/18, 0, 1, 0)
         glTranslatef(0.0, 0.0, 0.0)    # 移动物体到原点
         _draw_head()    # 绘制头部
         _draw_hair()    # 绘制头发
@@ -540,23 +532,23 @@ class Steve():
             glPushMatrix()
             
             glTranslatef(0.0, 0.0, 0.0)
-            glRotatef(g_body_rotate_y, 0, 1, 0)
+            glRotatef(self.body_rotate_y, 0, 1, 0)
             _draw_body()  
 
             if True:  # 画手臂
                 glPushMatrix()
-                g_left_arm.draw()
+                self.left_arm.draw()
                 glPopMatrix()
                 glPushMatrix()
-                g_right_arm.draw()
+                self.right_arm.draw()
                 glPopMatrix()
 
             if True:  # 画腿
                 glPushMatrix()
-                g_left_leg.draw()
+                self.left_leg.draw()
                 glPopMatrix()
                 glPushMatrix()
-                g_right_leg.draw()
+                self.right_leg.draw()
                 glPopMatrix()
 
             glPopMatrix()
