@@ -144,6 +144,8 @@ def keyboard(key, x, y):
             steve_mz.add_run_speed(1)
         if key == b'E' or key == b'e':
             steve_mz.add_run_speed(-1)
+        if key == b'H' or key == b'h':
+            steve_mz.hit()
 
 
 g_use_apm = True
@@ -165,7 +167,8 @@ def flush_thread(id):
                 _count += 1
                 if i == 0x20:    # 空格
                     steve_mz.jump()
-
+                if i == 0x01:   # 鼠标左键
+                    steve_mz.hit()
 
         if len(action_times) == action_times_max_length:
             action_times.pop(0)

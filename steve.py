@@ -91,10 +91,16 @@ class Limbs(object):
         self.run_direction = 1
         self.MAX_X_ROTATE = 40
 
-    def update(self, if_run, run_speed=8):
+        # 用于hit角度控制的
+        self.hit_x_rotate = 0
+        self.hit_z_rotate = 0
+        self.if_hit = False
+
+    def update(self, if_run, run_speed, if_hit, hit_timer, hit_timer_MAX):
+        self.if_hit = if_hit
         if self.is_arm:
             # 自然动作z轴晃动
-            if self.is_left:    # 左arm
+            if self.is_left:
                 self.z_rotate += self._z_rotate_rate
                 if self.z_rotate < -self.MAX_Z_ROTATE or self.z_rotate >= 0:
                     self._z_rotate_rate = -self._z_rotate_rate
@@ -116,6 +122,22 @@ class Limbs(object):
                     self.x_rotate -= 1
                 elif self.x_rotate < 0:
                     self.x_rotate += 1
+            # hit动作优先级最高，覆盖之前的动作
+            if if_hit and self.is_left:     # hit动作动画 # 左arm 需要实现hit动作
+                _Z_RATE = 10
+                _X_RATE = 25
+                if hit_timer >= hit_timer_MAX/4*3:
+                    self.hit_z_rotate = -(hit_timer_MAX-hit_timer)*_Z_RATE
+                    self.hit_x_rotate = 0
+                elif hit_timer >= hit_timer_MAX/4*2:
+                    self.hit_z_rotate = -(hit_timer_MAX/4)*_Z_RATE + (hit_timer_MAX/4*3-hit_timer)*_Z_RATE
+                    self.hit_x_rotate = -(hit_timer_MAX/4*3-hit_timer)*_X_RATE
+                elif hit_timer >= hit_timer_MAX/4:
+                    self.hit_z_rotate = (hit_timer_MAX/4*2-hit_timer)*_Z_RATE
+                    self.hit_x_rotate = -(hit_timer_MAX/4)*_X_RATE + (hit_timer_MAX/4*2-hit_timer)*_X_RATE
+                elif hit_timer >= 0:
+                    self.hit_z_rotate = (hit_timer_MAX/4)*_Z_RATE-(hit_timer_MAX/4-hit_timer)*_Z_RATE
+                    self.hit_x_rotate = 0
 
 
         else:
@@ -143,12 +165,20 @@ class Limbs(object):
             mat_diffuse = [1.0, 1.0, 1.0, 1.0]
             glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
         if self.is_arm and self.is_left:
-            glTranslatef(-1.0, -1.0, 0.0)
-            glRotatef(self.z_rotate, 0, 0, 1)
-            glTranslatef(1.0, 1.0, 0.0)
-            glTranslatef(-1.0, -1.5, 0.0)
-            glRotatef(self.x_rotate, 1, 0, 0)
-            glTranslatef(1.0, 1.5, 0.0)
+            if self.if_hit:
+                glTranslatef(-1.0, -1.0, 0.0)
+                glRotatef(self.hit_z_rotate, 0, 0, 1)
+                glTranslatef(1.0, 1.0, 0.0)
+                glTranslatef(-1.0, -1.5, 0.0)
+                glRotatef(self.hit_x_rotate, 1, 0, 0)
+                glTranslatef(1.0, 1.5, 0.0)
+            else:
+                glTranslatef(-1.0, -1.0, 0.0)
+                glRotatef(self.z_rotate, 0, 0, 1)
+                glTranslatef(1.0, 1.0, 0.0)
+                glTranslatef(-1.0, -1.5, 0.0)
+                glRotatef(self.x_rotate, 1, 0, 0)
+                glTranslatef(1.0, 1.5, 0.0)
             # 左arm
             # 前面 - 使用纹理
             glEnable(GL_TEXTURE_2D)
@@ -499,6 +529,10 @@ class Steve():
         # 跑步速度控制
         self.if_run = False
         self.run_speed = 0
+        # hit动作控制
+        self.if_hit = False
+        self.hit_timer = 0
+        self.hit_timer_MAX = 12
 
     def jump(self):
         if self.if_jump:
@@ -506,6 +540,16 @@ class Steve():
         # 启动跳跃
         self.if_jump = True
         self.jump_timer = self.jump_timer_MAX
+
+
+    # 左键点击时右手打击
+    def hit(self):
+        if self.if_hit:
+            return
+        self.if_hit = True
+        self.hit_timer = self.hit_timer_MAX
+        # 预计分四段动作实现
+
 
     def add_run_speed(self, num):
         self.run_speed += num
@@ -554,10 +598,14 @@ class Steve():
             self.body_rotate_y = _head_rotate_y - 30
         elif self.body_rotate_y - _head_rotate_y > 30:
             self.body_rotate_y = _head_rotate_y + 30
-        self.left_arm.update(self.if_run, self.run_speed)
-        self.right_arm.update(self.if_run, self.run_speed)
-        self.left_leg.update(self.if_run, self.run_speed)
-        self.right_leg.update(self.if_run, self.run_speed)
+        self.left_arm.update(self.if_run, self.run_speed, \
+            self.if_hit, self.hit_timer, self.hit_timer_MAX)
+        self.right_arm.update(self.if_run, self.run_speed, \
+            self.if_hit, self.hit_timer, self.hit_timer_MAX)
+        self.left_leg.update(self.if_run, self.run_speed, \
+            self.if_hit, self.hit_timer, self.hit_timer_MAX)
+        self.right_leg.update(self.if_run, self.run_speed, \
+            self.if_hit, self.hit_timer, self.hit_timer_MAX)
 
         if self.if_jump:
             if self.jump_timer <= self.jump_timer_MAX / 2:
@@ -568,6 +616,11 @@ class Steve():
             if self.jump_timer == 0:
                 self.jump_height = 0
                 self.if_jump = False
+
+        if self.if_hit:
+            self.hit_timer -= 1
+            if self.hit_timer == 0:
+                self.if_hit = False
 
 
     def draw(self):
